@@ -1,0 +1,129 @@
+import pgzrun
+import random
+
+#Initialize
+WIDTH,HEIGHT = 768,432
+TIME = 0
+names = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+HPvalue = ["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20"]
+idlerset,ground = [],[]
+garbage = []
+words = {}
+flag = False
+count0=19
+count1=19
+##Import images
+#Character
+for i in range(12):
+    idlerset.append('idle\\idler\\idler'+str(i))
+#Floor
+for i in range(50):
+    ground.append(Actor('tileset\\ground'))
+
+##Setup Character
+#PLAYER
+PLAYER = Actor('idle\idler\idler0')
+PLAYER.jumph = 0
+PLAYER.frame = 0
+PLAYER.state = 'IDLE'
+PLAYER.direction = 'RIGHT'
+#BOSS
+BOSS = Actor("soul_reaper\\idle")
+HPPLAYER = Actor("20")
+HPBOSS = Actor("20")
+
+def initializeMap():
+    #Player and boss and Hp
+    PLAYER.bottomleft = PLAYER.width*3,HEIGHT-ground[0].height
+    BOSS.bottomright = WIDTH,HEIGHT
+    HPPLAYER.center = (100,320)
+    HPBOSS.center = (590,130)
+    #Floor
+    for i in range(50):
+        ground[i].topright = (i+1)*(ground[i].width-5),HEIGHT - ground[i].height + 2
+
+def PLAYER_idle():
+    PLAYER.frame += 0.25
+    PLAYER.image = idlerset[int(PLAYER.frame)%12]
+
+def PLAYER_injured():
+    PLAYER.image="player_injured"
+    clock.schedule_unique(PLAYER_idle,1.0)
+
+def BOSS_idle():
+    BOSS.image="soul_reaper\\idle"
+
+def BOSS_injured():
+    BOSS.image="soul_reaper\\injured"
+    clock.schedule_unique(BOSS_idle,1.0)
+
+def HPPLAYER_deduct():
+    global count0
+    if count0>0:
+       count0+=-5
+       HPPLAYER.image=HPvalue[count0]
+    elif count0<=0:
+       HPPLAYER.image="0"
+       PLAYER.image="soul_reaper\\injured"
+
+def HPBOSS_deduct():
+    global count1
+    count1+=-1
+    HPBOSS.image=HPvalue[count1]
+
+def on_key_down(key):
+    global flag
+    flag=key.name.lower()
+
+def drawStage3():
+    for i in range(4):
+        screen.blit(('background\\plx-'+str(i+1)),(0,0))
+    for i in ground:
+        i.draw()
+    PLAYER.draw()
+    BOSS.draw()
+    HPBOSS.draw()
+    HPPLAYER.draw()
+def draw():
+    screen.clear()
+    drawStage3()
+    for i in words:
+        tmp = words[i]
+        tmp.draw()
+
+def update():
+    global flag,key_pressed,TIME,count1
+    TIME += 1
+    if TIME % 60 == 0:
+        x=random.choice(names)
+        y=str.upper(x)
+        t=Actor('alphabets\\'+x)
+        words[x]=t
+    for i in words:
+        v=words[i]
+        if count1 > 15:
+           v.left += 5
+        elif count1 <= 15:
+           v.left += 10
+        if v.left>=WIDTH:
+           garbage.append(i)
+           PLAYER_injured()
+           HPPLAYER_deduct()
+
+
+    if flag in words:
+        del words[flag]
+        BOSS_injured()
+        HPBOSS_deduct()
+        flag = False
+    else:
+        if flag:
+            PLAYER_injured()
+            HPPLAYER_deduct()
+            flag= False
+
+initializeMap()
+sounds.music.play(loops=10)
+sounds.music.set_volume(0.2)
+pgzrun.go()
+
